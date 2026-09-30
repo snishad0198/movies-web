@@ -1,0 +1,183 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-inter: 'Inter', sans-serif;
+  --font-outfit: 'Outfit', sans-serif;
+  --font-bebas: var(--font-outfit);
+  
+  --color-primary: #e50914;
+  --color-secondary: #1e1b4b;
+  --color-accent: #ff1f2d;
+  --color-background: #08080c;
+  --color-foreground: #f8fafc;
+  --color-card: #121218;
+  --color-border: #232334;
+}
+
+body {
+  background-color: var(--color-background, #08080c);
+  color: var(--color-foreground, #f8fafc);
+  font-family: var(--font-inter), sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Modern Sleek Typography for Headings */
+.font-display,
+.font-bebas,
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-outfit), sans-serif;
+}
+
+/* Dynamic Admin Color Bindings for Instant Global Theme Synchronization */
+.bg-\[\#e50914\],
+.bg-brand-red,
+.bg-brand,
+.bg-primary {
+  background-color: var(--color-primary, #e50914) !important;
+}
+
+.text-\[\#e50914\],
+.text-brand-red,
+.text-brand,
+.text-primary {
+  color: var(--color-primary, #e50914) !important;
+}
+
+.border-\[\#e50914\],
+.border-brand-red,
+.border-brand,
+.border-primary {
+  border-color: var(--color-primary, #e50914) !important;
+}
+
+.hover\:bg-\[\#f40612\]:hover,
+.hover\:bg-\[\#e50914\]:hover,
+.hover\:bg-brand-redHover:hover,
+.hover\:bg-brand-hover:hover {
+  background-color: var(--color-accent, var(--color-primary, #e50914)) !important;
+  opacity: 0.92;
+}
+
+.hover\:text-\[\#e50914\]:hover,
+.group-hover\:text-\[\#e50914\]:hover,
+.group:hover .group-hover\:text-\[\#e50914\] {
+  color: var(--color-primary, #e50914) !important;
+}
+
+.group-hover\:border-red-600\/40:hover,
+.group:hover .group-hover\:border-red-600\/40 {
+  border-color: var(--color-primary, #e50914) !important;
+}
+
+.shadow-red-600\/30,
+.shadow-red-600\/40 {
+  box-shadow: 0 10px 25px -5px rgba(var(--color-primary-rgb, 229, 9, 20), 0.3) !important;
+}
+
+.selection\:bg-\[\#e50914\]::selection {
+  background-color: var(--color-primary, #e50914) !important;
+  color: #ffffff !important;
+}
+
+/* Custom Scrollbar with Dynamic Theme Color */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background, #08080c);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #232334;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary, #e50914);
+}
+
+/* Focus rings for accessibility */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid var(--color-primary, #e50914);
+  outline-offset: 2px;
+}
+
+/* Hide scrollbar for carousel while preserving scrolling */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Gradient Hero Overlay */
+.hero-gradient {
+  background: linear-gradient(
+    180deg,
+    rgba(8, 8, 12, 0) 0%,
+    rgba(8, 8, 12, 0.4) 40%,
+    rgba(8, 8, 12, 0.8) 75%,
+    var(--color-background, #08080c) 100%
+  );
+}
+
+.hero-vignette {
+  background: radial-gradient(
+    circle at 70% 30%,
+    transparent 0%,
+    rgba(8, 8, 12, 0.5) 60%,
+    var(--color-background, #08080c) 100%
+  );
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(18, 18, 24, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Skeleton Shimmer Wave Effect for Lazy Loaded Images */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: #141422;
+}
+
+.skeleton-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.05) 20%,
+    rgba(255, 255, 255, 0.13) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: shimmer 1.6s infinite ease-in-out;
+  pointer-events: none;
+}
+

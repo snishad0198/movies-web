@@ -1,0 +1,303 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum MediaType {
+  MOVIE
+  SERIES
+}
+
+enum ContentStatus {
+  PUBLISHED
+  DRAFT
+  HIDDEN
+  COMING_SOON
+}
+
+enum StreamType {
+  EMBED
+  DIRECT
+  HLS
+  YOUTUBE
+}
+
+enum CommentStatus {
+  PENDING
+  APPROVED
+  SPAM
+}
+
+enum AdminRole {
+  ADMIN
+  SUPER_ADMIN
+}
+
+model Movie {
+  id              Int             @id @default(autoincrement())
+  title           String          @db.VarChar(255)
+  slug            String          @unique @db.VarChar(255)
+  type            MediaType       @default(MOVIE)
+  description     String?         @db.LongText
+  poster          String?         @db.Text
+  backdrop        String?         @db.Text
+  trailerUrl      String?         @map("trailer_url") @db.Text
+  releaseYear     Int?            @map("release_year")
+  runtime         Int?            // in minutes
+  language        String?         @default("Hindi") @db.VarChar(50)
+  imdbRating      Decimal?        @map("imdb_rating") @db.Decimal(3, 1)
+  imdbId          String?         @map("imdb_id") @db.VarChar(50)
+  tmdbId          String?         @map("tmdb_id") @db.VarChar(50)
+  director        String?         @db.VarChar(255)
+  cast            Json?           // Array of { name: string, role: string, photo?: string }
+  production      String?         @db.VarChar(255)
+  country         String?         @default("India") @db.VarChar(100)
+  screenshots     Json?           // Array of image URLs
+  status          ContentStatus   @default(PUBLISHED)
+  featured        Boolean         @default(false)
+  viewCount       Int             @default(0) @map("view_count")
+  downloadCount   Int             @default(0) @map("download_count")
+  tags            String?         @db.Text
+  seoTitle        String?         @map("seo_title") @db.VarChar(255)
+  seoDescription  String?         @map("seo_description") @db.Text
+  seoKeywords     String?         @map("seo_keywords") @db.Text
+  ogImage         String?         @map("og_image") @db.Text
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  genres          MovieGenre[]
+  seasons         SeriesSeason[]
+  streamSources   StreamSource[]
+  downloadLinks   DownloadLink[]
+  comments        Comment[]
+
+  @@index([type, status])
+  @@index([featured])
+  @@index([releaseYear])
+  @@map("movies")
+}
+
+model Genre {
+  id              Int             @id @default(autoincrement())
+  name            String          @unique @db.VarChar(100)
+  slug            String          @unique @db.VarChar(100)
+  icon            String?         @db.VarChar(50)
+  color           String?         @default("#e50914") @db.VarChar(20)
+  description     String?         @db.Text
+  sortOrder       Int             @default(0) @map("sort_order")
+  showOnHomepage  Boolean         @default(true) @map("show_on_homepage")
+
+  movies          MovieGenre[]
+
+  @@map("genres")
+}
+
+model MovieGenre {
+  movieId         Int             @map("movie_id")
+  genreId         Int             @map("genre_id")
+
+  movie           Movie           @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  genre           Genre           @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([movieId, genreId])
+  @@map("movie_genres")
+}
+
+model SeriesSeason {
+  id              Int             @id @default(autoincrement())
+  movieId         Int             @map("movie_id")
+  seasonNumber    Int             @map("season_number")
+  title           String?         @db.VarChar(255)
+  year            Int?
+  poster          String?         @db.Text
+
+  movie           Movie           @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  episodes        SeriesEpisode[]
+
+  @@unique([movieId, seasonNumber])
+  @@map("series_seasons")
+}
+
+model SeriesEpisode {
+  id              Int             @id @default(autoincrement())
+  seasonId        Int             @map("season_id")
+  episodeNumber   Int             @map("episode_number")
+  title           String          @db.VarChar(255)
+  description     String?         @db.Text
+  thumbnail       String?         @db.Text
+  airDate         String?         @map("air_date") @db.VarChar(50)
+  duration        Int?            // in minutes
+  viewCount       Int             @default(0) @map("view_count")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  season          SeriesSeason    @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  streamSources   StreamSource[]
+  downloadLinks   DownloadLink[]
+
+  @@unique([seasonId, episodeNumber])
+  @@map("series_episodes")
+}
+
+model StreamSource {
+  id              Int             @id @default(autoincrement())
+  movieId         Int?            @map("movie_id")
+  episodeId       Int?            @map("episode_id")
+  serverName      String          @map("server_name") @db.VarChar(100)
+  url             String          @db.Text
+  type            StreamType      @default(EMBED)
+  quality         String?         @default("1080p") @db.VarChar(20)
+  language        String?         @default("Hindi") @db.VarChar(50)
+  sortOrder       Int             @default(0) @map("sort_order")
+
+  movie           Movie?          @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  episode         SeriesEpisode?  @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@map("stream_sources")
+}
+
+model DownloadLink {
+  id              Int             @id @default(autoincrement())
+  movieId         Int?            @map("movie_id")
+  episodeId       Int?            @map("episode_id")
+  quality         String          @db.VarChar(20)
+  sizeLabel       String?         @map("size_label") @db.VarChar(50)
+  url             String          @db.Text
+  provider        String?         @default("Fast Cloud") @db.VarChar(100)
+  sortOrder       Int             @default(0) @map("sort_order")
+
+  movie           Movie?          @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  episode         SeriesEpisode?  @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@map("download_links")
+}
+
+model DownloadCache {
+  id              Int             @id @default(autoincrement())
+  cacheKey        String          @unique @map("cache_key") @db.VarChar(255)
+  responseJson    String          @map("response_json") @db.LongText
+  cachedAt        DateTime        @default(now()) @map("cached_at")
+  expiresAt       DateTime        @map("expires_at")
+
+  @@map("download_cache")
+}
+
+model Comment {
+  id              Int             @id @default(autoincrement())
+  movieId         Int             @map("movie_id")
+  name            String          @db.VarChar(100)
+  email           String?         @db.VarChar(150)
+  content         String          @db.Text
+  status          CommentStatus   @default(APPROVED)
+  parentId        Int?            @map("parent_id")
+  ipAddress       String?         @map("ip_address") @db.VarChar(50)
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  movie           Movie           @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  parent          Comment?        @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies         Comment[]       @relation("CommentReplies")
+
+  @@map("comments")
+}
+
+model Admin {
+  id              Int             @id @default(autoincrement())
+  name            String          @db.VarChar(100)
+  email           String          @unique @db.VarChar(150)
+  password        String          @db.VarChar(255)
+  role            AdminRole       @default(ADMIN)
+  lastLogin       DateTime?       @map("last_login")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  @@map("admins")
+}
+
+model SiteSetting {
+  id                String        @id @default("1")
+  siteName          String        @default("Movies.snishad") @map("site_name")
+  tagline           String?       @default("Watch & Download Free HD Movies & Series")
+  logo              String?       @default("https://i.ibb.co/xKTs0n1x/18101784373776709.jpg")
+  favicon           String?       @default("https://i.ibb.co/xKTs0n1x/18101784373776709.jpg")
+  gaId              String?       @map("ga_id")
+  adsenseId         String?       @map("adsense_id")
+  adsEnabled        Boolean       @default(false) @map("ads_enabled")
+  maintenanceMode   Boolean       @default(false) @map("maintenance_mode")
+  maintenanceMsg    String?       @map("maintenance_msg") @db.Text
+  maxLoginAttempts  Int           @default(5) @map("max_login_attempts")
+  lockoutDuration   Int           @default(15) @map("lockout_duration")
+  recaptchaEnabled  Boolean       @default(false) @map("recaptcha_enabled")
+  recaptchaSiteKey  String?       @map("recaptcha_site_key")
+  recaptchaSecret   String?       @map("recaptcha_secret")
+  smtpHost          String?       @map("smtp_host")
+  smtpPort          Int?          @default(587) @map("smtp_port")
+  smtpUser          String?       @map("smtp_user")
+  smtpPass          String?       @map("smtp_pass")
+  smtpFromName      String?       @map("smtp_from_name")
+  smtpFromEmail     String?       @map("smtp_from_email")
+  socialFacebook    String?       @map("social_facebook")
+  socialInstagram   String?       @map("social_instagram")
+  socialTwitter     String?       @map("social_twitter")
+  socialYoutube     String?       @map("social_youtube")
+  socialTelegram    String?       @map("social_telegram")
+  socialWhatsapp    String?       @map("social_whatsapp")
+  playerType        String        @default("plyr") @map("player_type")
+  autoplay          Boolean       @default(true)
+  watermark         String?
+  downloadApiUrl    String        @default("https://02moviedownloader.top/") @map("download_api_url")
+  tmdbApiKey        String?       @map("tmdb_api_key") @db.VarChar(100)
+  footerText        String?       @map("footer_text") @db.Text
+  itemsPerPage      Int           @default(20) @map("items_per_page")
+
+  // Dynamic Theme Colors & Customization
+  primaryColor      String        @default("#e50914") @map("primary_color")
+  accentColor       String        @default("#ff1f2d") @map("accent_color")
+  backgroundColor   String        @default("#08080c") @map("background_color")
+  cardColor         String        @default("#121218") @map("card_color")
+  textColor         String        @default("#f8fafc") @map("text_color")
+
+  // Text, Links, Announcement & Layout Customization
+  announcementText  String?       @map("announcement_text") @db.Text
+  announcementLink  String?       @map("announcement_link")
+  announcementActive Boolean      @default(false) @map("announcement_active")
+  customLinks       String?       @map("custom_links") @db.Text
+  layoutStyle       String        @default("modern") @map("layout_style")
+
+  adHeader          String?       @map("ad_header") @db.Text
+  adAfterHero       String?       @map("ad_after_hero") @db.Text
+  adSidebar         String?       @map("ad_sidebar") @db.Text
+  adInContent       String?       @map("ad_in_content") @db.Text
+  adBeforePlayer    String?       @map("ad_before_player") @db.Text
+  adFooter          String?       @map("ad_footer") @db.Text
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  @@map("site_settings")
+}
+
+model ActivityLog {
+  id              Int             @id @default(autoincrement())
+  type            String          @db.VarChar(50)
+  referenceId     String?         @map("reference_id") @db.VarChar(100)
+  referenceType   String?         @map("reference_type") @db.VarChar(50)
+  value           String?         @db.Text
+  ip              String?         @db.VarChar(50)
+  userAgent       String?         @map("user_agent") @db.Text
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  @@index([type, createdAt])
+  @@map("activity_logs")
+}
+
+model ErrorLog {
+  id              Int             @id @default(autoincrement())
+  type            String          @db.VarChar(50)
+  url             String?         @db.Text
+  message         String          @db.Text
+  stack           String?         @db.LongText
+  ip              String?         @db.VarChar(50)
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  @@map("error_logs")
+}
